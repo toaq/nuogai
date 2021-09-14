@@ -14,9 +14,7 @@
     , serial-predicate-engine-upstream, flake-utils, ... }:
     {
       inherit (gomod2nix) devShell;
-      nixosModule = { config, system, ... }: {
-        config.fonts.fonts = [ self.packages.toaqScript.${system} ];
-      };
+      nixosModule = a: import ./module.nix (a // { inherit self; system = "x86_64-linux"; });
     } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = (import nixpkgs {
@@ -25,7 +23,8 @@
         }).pkgs;
       in with pkgs;
       let
-        toaqScript = pkgs.writeTextDir "share/fonts/ToaqScript.ttf" ./ToaqScript.ttf;
+        toaqScript =
+          pkgs.writeTextDir "share/fonts/ToaqScript.ttf" ./ToaqScript.ttf;
         schemePkgs = lib.mapAttrs (name:
           { src, install, patches }:
           pkgs.stdenv.mkDerivation {
@@ -53,22 +52,20 @@
                   '';
             };
           };
-          nuogai = buildGoApplication {
-            vendorSha256 = null;
-            runVend = true;
-            name = "nuogai";
-            src = ./.;
-            modules = ./gomod2nix.toml;
-            buildInputs = (builtins.attrValues schemePkgs) ++ [
-              toaqScript
-              (imagemagick.overrideAttrs
-                (a: { buildInputs = a.buildInputs ++ [ pango ]; }))
-            ];
-          };
+        nuogai = buildGoApplication {
+          vendorSha256 = null;
+          runVend = true;
+          name = "nuogai";
+          src = ./.;
+          modules = ./gomod2nix.toml;
+          buildInputs = (builtins.attrValues schemePkgs) ++ [
+            toaqScript
+            (imagemagick.overrideAttrs
+              (a: { buildInputs = a.buildInputs ++ [ pango ]; }))
+          ];
+        };
       in {
         defaultPackage = nuogai;
-        packages = schemePkgs // {
-          inherit toaqScript nuogai;
-        };
+        packages = schemePkgs // { inherit toaqScript nuogai; };
       });
 }
