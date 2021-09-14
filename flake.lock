@@ -1,0 +1,132 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1631561581,
+        "narHash": "sha256-3VQMV5zvxaVLvqqUrNz3iJelLw30mIVSfZmAaauM3dA=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "7e5bf3925f6fbdfaf50a2a7ca0be2879c4261d19",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "ref": "master",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "gomod2nix": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "utils": "utils"
+      },
+      "locked": {
+        "lastModified": 1627572165,
+        "narHash": "sha256-MFpwnkvQpauj799b4QTBJQFEddbD02+Ln5k92QyHOSk=",
+        "owner": "tweag",
+        "repo": "gomod2nix",
+        "rev": "67f22dd738d092c6ba88e420350ada0ed4992ae8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tweag",
+        "ref": "master",
+        "repo": "gomod2nix",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1625191069,
+        "narHash": "sha256-M8/UH9pMgQEtuzY9bFwklYw8hx0pOKtUTyQC8E2UTHY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d8079260a3028ae3221d7a5467443ee3a9edd2b8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1631655525,
+        "narHash": "sha256-8U7zAdbjNItXo6eqI/rhtOa3LUPGD6yE9PTZQkrSGHo=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "cf0caf529c33c140863ebfa43691f7b69fe2233c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nuigui-upstream": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1551541396,
+        "narHash": "sha256-PZUzgumsvIpzEgODVpiBKlZzZQHXKhS+3lOB+2EDeeQ=",
+        "owner": "uakci",
+        "repo": "nuigui",
+        "rev": "87d41886f7c4693dfc5e3016799232c7e15e4c81",
+        "type": "github"
+      },
+      "original": {
+        "owner": "uakci",
+        "ref": "master",
+        "repo": "nuigui",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "gomod2nix": "gomod2nix",
+        "nixpkgs": "nixpkgs_2",
+        "nuigui-upstream": "nuigui-upstream",
+        "serial-predicate-engine-upstream": "serial-predicate-engine-upstream"
+      }
+    },
+    "serial-predicate-engine-upstream": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1546479877,
+        "narHash": "sha256-jVDNyfYWlk5qYsZSQjcGdI4hdEKKdSciz6QK0nAqKGs=",
+        "owner": "acotis",
+        "repo": "serial-predicate-engine",
+        "rev": "9e02baf711c0b7402da2eeb50b8644bf7b6e415f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "acotis",
+        "ref": "master",
+        "repo": "serial-predicate-engine",
+        "type": "github"
+      }
+    },
+    "utils": {
+      "locked": {
+        "lastModified": 1623875721,
+        "narHash": "sha256-A8BU7bjS5GirpAUv4QA+QnJ4CceLHkcXdRp4xITDB0s=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "f7e004a55b120c02ecb6219596820fcd32ca8772",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

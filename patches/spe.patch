@@ -1,0 +1,11 @@
+diff --git a/web/webservice.scm b/web/webservice.scm
+index 8193dda..0cc6ca4 100755
+--- a/web/webservice.scm
++++ b/web/webservice.scm
+@@ -51,4 +51,4 @@
+ 
+ (run-server spe-handler
+             'http
+-            '(#:host "0.0.0.0"))
+\ No newline at end of file
++            `(#:host "127.0.0.1" #:port ,(string->number (getenv "PORT"))))
