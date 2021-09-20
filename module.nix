@@ -1,7 +1,8 @@
-{ config, lib, self, ... }:
+{ config, pkgs, lib, self, ... }:
 let cfg = config.services.nuogai; in with lib; {
   options.services.nuogai = {
     enable = mkEnableOption "Enables the nuogaı Discord Bot";
+    guilePackage = mkOption { default = pkgs.guile; type = types.package; };
     nuiPort = mkOption { type = types.port; };
     spePort = mkOption { type = types.port; };
   };
@@ -20,11 +21,13 @@ let cfg = config.services.nuogai; in with lib; {
         };
       };
       nuigui = {
-        serviceConfig.ExecStart = "${self.packages.nuigui.${system}}/bin/nuigui";
+        serviceConfig.WorkingDirectory = "${self.packages.nuigui.${system}}";
+        serviceConfig.ExecStart = "${cfg.guilePackage} ./web.scm";
         environment.PORT = cfg.nuiPort;
       };
       serial-predicate-engine = {
-        serviceConfig.ExecStart = "${self.packages.serial-predicate-engine.${system}}/bin/serial-predicate-engine";
+        serviceConfig.WorkingDirectory = "${self.packages.serial-predicate-engine.${system}}";
+        serviceConfig.ExecStart = "${cfg.guilePackage} ./web/webservice.scm";
         environment.PORT = cfg.spePort;
       };
     };
