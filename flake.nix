@@ -22,33 +22,36 @@
         }).pkgs;
       in with pkgs;
       let
-        toaqScript =
-          pkgs.writeTextDir "share/fonts/ToaqScript.ttf" ./ToaqScript.ttf;
+        toaqScript = runCommand "toaq-script" { } ''
+          mkdir -p $out/share/fonts
+          cp ${./ToaqScript.ttf} $out/share/fonts/ToaqScript.ttf
+        '';
         schemePkgs = lib.mapAttrs (name:
           { src, install, patches }:
           pkgs.stdenv.mkDerivation {
             inherit src name patches;
-            buildInputs = [ pkgs.guile ];
+            buildInputs = [ guile ];
             installPhase = ''
               mkdir -p $out/bin
               cp -r ./* $out
-              echo "${install}" > $out/bin/${name}
-              chmod +x $out/bin/${name}
+              cp "${writers.writeBash "${name}-start" install}" $out/bin/${name}
             '';
           }) {
             nuigui = {
               src = nuigui-upstream;
               patches = [ ./patches/nui.patch ];
               install = ''
-                cd \$(dirname \$0)/../; ${pkgs.guile}/bin/guile web.scm
+                cd $(dirname $0)/../
+                ${guile}/bin/guile web.scm
               '';
             };
             serial-predicate-engine = {
               src = serial-predicate-engine-upstream;
               patches = [ ./patches/spe.patch ];
               install = ''
-                cd \$(dirname \$0)/../web/; ${pkgs.guile}/bin/guile webservice.scm
-                  '';
+                cd $(dirname $0)/../web/
+                ${guile}/bin/guile webservice.scm
+              '';
             };
           };
         nuogai = buildGoApplication {
@@ -66,6 +69,7 @@
       in {
         defaultPackage = nuogai;
         packages = schemePkgs // { inherit toaqScript nuogai; };
-        nixosModule = a: import ./module.nix (a // { inherit self system; });
+        nixosModule = { config, pkgs, lib, ... }@a:
+          import ./module.nix (a // { inherit self system; });
       });
 }

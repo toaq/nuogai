@@ -8,4 +8,4 @@ index 8193dda..0cc6ca4 100755
              'http
 -            '(#:host "0.0.0.0"))
 \ No newline at end of file
-+            `(#:host "127.0.0.1" #:port ,(string->number (getenv "PORT"))))
++            `(#:port ,(string->number (getenv "PORT"))))

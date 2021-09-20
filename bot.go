@@ -2,20 +2,20 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"regexp"
-	"strconv"
-	"strings"
-	"net/url"
+	"log"
 	"net/http"
-	"encoding/json"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
+	"strconv"
+	"strings"
 	"syscall"
-	"log"
 
 	"git.uakci.pl/toaq/nuogai/vietoaq"
 	"github.com/bwmarrin/discordgo"
@@ -25,37 +25,48 @@ import (
 
 const (
 	lozenge = '▯'
-	myself = "490175530537058314"
-	HELP =
-	    "\u2003**commands:**"                                    +
-	  "\n`%` — Toadūa lookup (3 results at a time)"              +
-	  "\n\u2003(`%37` — show 37 results at a time)"              +
-	  "\n\u2003(`%!` — show one result, with extra info)"        +
-	  "\n\u2003(`%!37` — show 37 results, with extra info)"      +
-	  "\n\u2003(`% 59` — show 59th page of results)"             +
-	  "\n`%serial` — fagri's serial predicate engine"            +
-	  "\n`%nui` — uakci's serial predicate engine"               +
-	  "\n\u2003(`%serial` and `%nui` do not accept tone marks)"  +
-		"\n`%hoe` — Hoelāı renderer (font version: v0.341)"        +
-	  "\n\u2003(`%hoe!` — same as above; raw input)"             +
-	  "\n`%miu` — jelca's semantic parser"
+	myself  = "490175530537058314"
+	HELP    = "\u2003**commands:**" +
+		"\n`%` — Toadūa lookup (3 results at a time)" +
+		"\n\u2003(`%37` — show 37 results at a time)" +
+		"\n\u2003(`%!` — show one result, with extra info)" +
+		"\n\u2003(`%!37` — show 37 results, with extra info)" +
+		"\n\u2003(`% 59` — show 59th page of results)" +
+		"\n`%serial` — fagri's serial predicate engine" +
+		"\n`%nui` — uakci's serial predicate engine" +
+		"\n\u2003(`%serial` and `%nui` do not accept tone marks)" +
+		"\n`%hoe` — Hoelāı renderer (font version: v0.341)" +
+		"\n\u2003(`%hoe!` — same as above; raw input)" +
+		"\n`%miu` — jelca's semantic parser"
 	UNKNOWN = "unknown command — see `%help` for help"
 )
 
 var (
 	header     = regexp.MustCompile(`^\*\*.*?\*\*: `)
 	whitespace = regexp.MustCompile(`[ ]+`)
-	spePort string
-	nuiPort string
+	toaPort    string
+	spePort    string
+	nuiPort    string
 )
 
+func mustGetenv(name string) (env string) {
+	env, ok := os.LookupEnv(name)
+	if !ok {
+		panic(fmt.Errorf("environment variable %s missing", name))
+	}
+	return
+}
+
 func init() {
-	spePort = os.Getenv("SPE_PORT")
-	nuiPort = os.Getenv("NUI_PORT")
+	spePort = mustGetenv("SPE_PORT")
+	nuiPort = mustGetenv("NUI_PORT")
+	toaPort = mustGetenv("TOA_PORT")
 }
 
 func min(a, b int) int {
-	if a < b { return a }
+	if a < b {
+		return a
+	}
 	return b
 }
 
@@ -113,7 +124,7 @@ func respond(message string, callback func(interface{})) {
 		}
 	}()
 	message = strings.Trim(
-			header.ReplaceAllLiteralString(message, ""),
+		header.ReplaceAllLiteralString(message, ""),
 		" \n")
 	parts := whitespace.Split(message, -1)
 	cmd, args, rest := parts[0], parts[1:], strings.Join(parts[1:], " ")
@@ -128,7 +139,10 @@ func respond(message string, callback func(interface{})) {
 			cmd_ = cmd_[1:]
 			showNotes = true
 		}
-		var (n int; err error)
+		var (
+			n   int
+			err error
+		)
 		if len(cmd_) > 0 {
 			n, err = strconv.Atoi(cmd_)
 		} else {
@@ -158,7 +172,7 @@ func respond(message string, callback func(interface{})) {
 			callback("please supply input")
 			return
 		}
-		resp, err := get(`http://localhost:9011/query?` + rest)
+		resp, err := get(fmt.Sprintf("http://localhost:%s/query?%s", spePort, rest))
 		if err != nil {
 			log.Print(err)
 			callback("connectivity error")
@@ -170,7 +184,7 @@ func respond(message string, callback func(interface{})) {
 			callback("please supply input")
 			return
 		}
-		u, err := url.Parse(`http://localhost:7183/`)
+		u, err := url.Parse(fmt.Sprintf("http://localhost:%s", nuiPort))
 		resp, err := post(u.String(), "application/octet-stream",
 			bytes.NewBufferString(rest))
 		if err != nil {
@@ -194,7 +208,7 @@ func respond(message string, callback func(interface{})) {
 			var sb strings.Builder
 			for i := 0; i < len(parts); i++ {
 				s := parts[i]
-				if i % 2 == 1 {
+				if i%2 == 1 {
 					sb.WriteString("<")
 				} else {
 					if i != 0 {
@@ -214,7 +228,7 @@ func respond(message string, callback func(interface{})) {
 			"-stroke", "black",
 			"-font", "ToaqScript",
 			"-pointsize", "24",
-			"pango:" + rest,
+			"pango:"+rest,
 			"-bordercolor", "none",
 			"-border", "20",
 			"png:-").Output()
@@ -267,7 +281,7 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 		args = args[1:]
 	}
 	query := strings.Join(args, " ")
-	mars, err := json.Marshal(struct{
+	mars, err := json.Marshal(struct {
 		S string      `json:"action"`
 		I interface{} `json:"query"`
 	}{
@@ -279,23 +293,23 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 		callback("error")
 		return
 	}
-	raw, err := http.Post(`https://toadua.uakci.pl/api`,
+	raw, err := http.Post(fmt.Sprintf(`http://localhost:%s/api`, toaPort),
 		"application/json", bytes.NewReader(mars))
 	if err != nil {
 		log.Print(err)
 		callback("connectivity error")
 		return
 	}
-	var resp struct{
-		Success bool `json:"success"`
-		Error string `json:"error"`
-		Entries []struct{
+	var resp struct {
+		Success bool   `json:"success"`
+		Error   string `json:"error"`
+		Entries []struct {
 			Id    string `json:"id"`
 			User  string `json:"user"`
 			Head  string `json:"head"`
 			Body  string `json:"body"`
 			Score int    `json:"score"`
-			Notes []struct{
+			Notes []struct {
 				User    string `json:"user"`
 				Content string `json:"content"`
 			} `json:"notes"`
@@ -327,10 +341,10 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 		callback(fmt.Sprintf("invalid page number (%d results)", len(resp.Entries)))
 		return
 	}
-	last := min(first + howMany, len(resp.Entries))
+	last := min(first+howMany, len(resp.Entries))
 	var b strings.Builder
 	b.Grow(2000)
-	fmt.Fprintf(&b, "\u2003(%d–%d/%d)", first + 1, last, len(resp.Entries))
+	fmt.Fprintf(&b, "\u2003(%d–%d/%d)", first+1, last, len(resp.Entries))
 	soFar := b.String()
 	for _, e := range resp.Entries[first:last] {
 		// if i != 0 {
@@ -418,28 +432,36 @@ func Hoekai(s string) string {
 	parts := vietoaq.Syllables(viet, vietoaq.VietoaqSyllable)
 	var sb strings.Builder
 	for i, part := range parts {
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			sb.WriteString(part[0])
 			continue
 		}
 		onset, nucleus, coda := part[1], part[2], part[3]
 		switch onset {
-		case "ch": onset = "w"
-		case "sh": onset = "x"
-		case "x":  onset = "q"
+		case "ch":
+			onset = "w"
+		case "sh":
+			onset = "x"
+		case "x":
+			onset = "q"
 		}
 		diph := ""
 		if len(nucleus) >= 2 {
 			flag := true
-			switch nucleus[len(nucleus) - 2:] {
-			case "ai": diph = "y"
-			case "ao": diph = "v"
-			case "oi": diph = "z"
-			case "ei": diph = "W"
-			default: flag = false
+			switch nucleus[len(nucleus)-2:] {
+			case "ai":
+				diph = "y"
+			case "ao":
+				diph = "v"
+			case "oi":
+				diph = "z"
+			case "ei":
+				diph = "W"
+			default:
+				flag = false
 			}
 			if flag {
-				nucleus = nucleus[:len(nucleus) - 2]
+				nucleus = nucleus[:len(nucleus)-2]
 			}
 		}
 		if len(nucleus) >= 2 {
@@ -456,10 +478,14 @@ func Hoekai(s string) string {
 
 func main() {
 	dg, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	dg.AddHandler(Respond)
 	err = dg.Open()
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
