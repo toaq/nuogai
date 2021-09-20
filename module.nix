@@ -5,20 +5,25 @@ let cfg = config.services.nuogai; in with lib; {
     guilePackage = mkOption { default = pkgs.guile; type = types.package; };
     nuiPort = mkOption { type = types.port; };
     spePort = mkOption { type = types.port; };
+    tokenPath = mkOption { type = types.path; };
   };
   config = mkIf cfg.enable {
     fonts.fonts = [ self.packages.toaqScript.${system} ];
-    systemd.services = lib.mapAttrs (k: v: v // {
-      wantedBy = [ "multi-user.target" ];
-      wants = v.wants or [] ++ [ "network-online.target" ];
-    }) {
+    systemd.services = lib.mapAttrs (k: v: {
+      wants = [ "network-online.target" ];
+    } // v) {
       nuogai = {
+        description = "Toaq Discord bot";
+        wantedBy = [ "multi-user.target" ];
         wants = [ "nuigui.service" "serial-predicate-engine.service" ];
-        serviceConfig.ExecStart = "${self.packages.nuogai.${system}}/bin/nuogai";
         environment = {
-          NUI_PORT = cfg.nuiPort;
-          SPE_PORT = cfg.spePort;
+          NUI_PORT = toString cfg.nuiPort;
+          SPE_PORT = toString cfg.spePort;
         };
+        script = ''
+          export TOKEN=$(cat ${cfg.tokenPath})
+          ${inputs.nuogai.packages.${system}.nuogai}/bin/nuogai
+        '';
       };
       nuigui = {
         serviceConfig.WorkingDirectory = "${self.packages.nuigui.${system}}";
