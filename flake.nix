@@ -14,6 +14,8 @@
     , serial-predicate-engine-upstream, flake-utils, ... }:
     {
       inherit (gomod2nix) devShell;
+      nixosModule = { config, pkgs, lib, ... }@args:
+        import ./module.nix (args // { inherit self; });
     } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = (import nixpkgs {
@@ -69,7 +71,5 @@
       in {
         defaultPackage = nuogai;
         packages = schemePkgs // { inherit toaqScript nuogai; };
-        nixosModule = { config, pkgs, lib, ... }@a:
-          import ./module.nix (a // { inherit self system; });
       });
 }
