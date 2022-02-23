@@ -11,9 +11,9 @@ in with lib; {
       ]);
     tokenPath = mkOption { type = types.path; };
   };
-  config = mkIf cfg.enable {
-    fonts.fonts = [ self.packages.${system}.toaqScript ];
-    systemd.services = lib.mapAttrs (k: v:
+  config = let enable = cfg.enable; in {
+    fonts.fonts = optionals enable [ self.packages.${system}.toaqScript ];
+    systemd.services = optionalAttrs enable (mapAttrs (k: v:
       {
         wants = [ "network-online.target" ];
       } // (v self.packages.${system}.${k})) {
@@ -41,6 +41,6 @@ in with lib; {
           serviceConfig.ExecStart = "${pkg}/bin/serial-predicate-engine";
           environment.PORT = toString cfg.ports.serial-predicate-engine;
         };
-      };
+      });
   };
 }
