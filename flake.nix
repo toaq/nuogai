@@ -67,8 +67,7 @@
       in {
         defaultPackage = nuogai;
         packages = schemePkgs // { inherit toaqScript nuogai; };
-        inherit (gomod2nix) devShell;
         nixosModule = { config, pkgs, lib, ... }@args:
           import ./module.nix (args // { inherit self system; });
-      });
+      }) // { inherit (gomod2nix) devShell; };
 }
