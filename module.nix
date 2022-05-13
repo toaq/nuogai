@@ -11,7 +11,8 @@ in with lib; {
       ]);
     tokenPath = mkOption { type = types.path; };
   };
-  config = let enable = cfg.enable; in {
+  config = let enable = cfg.enable;
+  in {
     fonts.fonts = optionals enable [ self.packages.${system}.toaqScript ];
     systemd.services = optionalAttrs enable (mapAttrs (k: v:
       {
@@ -28,6 +29,7 @@ in with lib; {
           };
           script = ''
             export TOKEN=$(cat ${cfg.tokenPath})
+            export PATH+=${self.packages.${system}.imagemagick}/bin
             ${pkg}/bin/nuogai
           '';
         };

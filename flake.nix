@@ -24,6 +24,8 @@
           mkdir -p $out/share/fonts
           cp ${./ToaqScript.ttf} $out/share/fonts/ToaqScript.ttf
         '';
+        imagemagick' = imagemagick.overrideAttrs
+          (a: { buildInputs = a.buildInputs ++ [ pango ]; });
         schemePkgs = lib.mapAttrs (name:
           { src, install, patches }:
           pkgs.stdenv.mkDerivation {
@@ -58,16 +60,18 @@
           name = "nuogai";
           src = ./.;
           modules = ./gomod2nix.toml;
-          buildInputs = (builtins.attrValues schemePkgs) ++ [
-            toaqScript
-            (imagemagick.overrideAttrs
-              (a: { buildInputs = a.buildInputs ++ [ pango ]; }))
-          ];
+          buildInputs = (builtins.attrValues schemePkgs)
+            ++ [ toaqScript imagemagick' ];
         };
       in {
         defaultPackage = nuogai;
-        packages = schemePkgs // { inherit toaqScript nuogai; };
+        packages = schemePkgs // {
+          inherit toaqScript nuogai;
+          imagemagick = imagemagick';
+        };
         nixosModule = { config, pkgs, lib, ... }@args:
           import ./module.nix (args // { inherit self system; });
-      }) // { inherit (gomod2nix) devShell; };
+      }) // {
+        inherit (gomod2nix) devShell;
+      };
 }
