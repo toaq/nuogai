@@ -29,7 +29,6 @@ in with lib; {
           };
           script = ''
             export TOKEN=$(cat ${cfg.tokenPath})
-            export PATH+=${self.packages.${system}.imagemagick}/bin
             ${pkg}/bin/nuogai
           '';
         };

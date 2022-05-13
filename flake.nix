@@ -60,14 +60,14 @@
           name = "nuogai";
           src = ./.;
           modules = ./gomod2nix.toml;
-          buildInputs = (builtins.attrValues schemePkgs)
+          propagatedBuildInputs = (builtins.attrValues schemePkgs)
             ++ [ toaqScript imagemagick' ];
         };
       in {
         defaultPackage = nuogai;
         packages = schemePkgs // {
           inherit toaqScript nuogai;
-          imagemagick = imagemagick';
+          imagemagickWithPango = imagemagick';
         };
         nixosModule = { config, pkgs, lib, ... }@args:
           import ./module.nix (args // { inherit self system; });
