@@ -15,7 +15,7 @@
       let
         pkgs = (import nixpkgs {
           inherit system;
-          overlays = [ gomod2nix.overlay ];
+          overlays = [ gomod2nix.overlays.default ];
         }).pkgs;
       in with pkgs;
       let
@@ -74,7 +74,6 @@
         };
         nixosModule = { config, pkgs, lib, ... }@args:
           import ./module.nix (args // { inherit self system; });
-      }) // {
-        inherit (gomod2nix) devShell;
-      };
+        devShells.${system} = gomod2nix.devShells.${system};
+      });
 }

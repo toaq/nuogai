@@ -1,79 +1,33 @@
-["github.com/bwmarrin/discordgo"]
-  sumVersion = "v0.23.2"
-  ["github.com/bwmarrin/discordgo".fetch]
-    type = "git"
-    url = "https://github.com/bwmarrin/discordgo"
-    rev = "c27ad65527ecbc264c674cd3d0e85bb09de942e3"
-    sha256 = "1k14f52s3wvp4jx7czicnfjwz9inbxiaidfg74z3gk9vlway69aq"
+schema = 1
 
-["github.com/eaburns/peggy"]
-  sumVersion = "v1.0.0"
-  ["github.com/eaburns/peggy".fetch]
-    type = "git"
-    url = "https://github.com/eaburns/peggy"
-    rev = "e1cd35e5dd2c0c34e02e847e569dafe1afb30033"
-    sha256 = "1mhdxs7vvwy6nzvx33dvkby1amp6cidxy6vl5hyzr0m6biqxlncs"
-
-["github.com/eaburns/pretty"]
-  sumVersion = "v1.0.0"
-  ["github.com/eaburns/pretty".fetch]
-    type = "git"
-    url = "https://github.com/eaburns/pretty"
-    rev = "af23b1658732d295adfdc728db79838ce7e7c53e"
-    sha256 = "1kaw6chx3bvbvfs5b5v5xvm4xcga0kcds4m6cm6rj5wqrsamhrlm"
-
-["github.com/eaburns/toaq"]
-  sumVersion = "v0.0.0-20210614121731-80ccb209650b"
-  ["github.com/eaburns/toaq".fetch]
-    type = "git"
-    url = "https://github.com/eaburns/toaq"
-    rev = "80ccb209650b6c7ef05d3736e1434c7ccc0e1398"
-    sha256 = "1pxkwh6lr5ajzwn85acg9458g8npkm5kdvkiryikckxj413mp1b4"
-
-["github.com/google/go-cmp"]
-  sumVersion = "v0.3.1"
-  ["github.com/google/go-cmp".fetch]
-    type = "git"
-    url = "https://github.com/google/go-cmp"
-    rev = "2d0692c2e9617365a95b295612ac0d4415ba4627"
-    sha256 = "1caw49i0plkjxir7kdf5qhwls3krqwfmi7g4h392rdfwi3kfahx1"
-
-["github.com/gorilla/websocket"]
-  sumVersion = "v1.4.1"
-  ["github.com/gorilla/websocket".fetch]
-    type = "git"
-    url = "https://github.com/gorilla/websocket"
-    rev = "c3e18be99d19e6b3e8f1559eea2c161a665c4b6b"
-    sha256 = "03n1n0nwz3k9qshmriycqznnnvd3dkzsfwpnfjzzvafjxk9kyapv"
-
-["github.com/velour/chat"]
-  sumVersion = "v0.0.0-20180713122344-fd1d1606cb89"
-  ["github.com/velour/chat".fetch]
-    type = "git"
-    url = "https://github.com/velour/chat"
-    rev = "fd1d1606cb8966f7141d57428833bf76e5b184ea"
-    sha256 = "1n9dyvqy3fr2f9hfzmrcikj6blx3xz2r7jg8i4j8a78033rb2fn0"
-
-["golang.org/x/crypto"]
-  sumVersion = "v0.0.0-20181030102418-4d3f4d9ffa16"
-  ["golang.org/x/crypto".fetch]
-    type = "git"
-    url = "https://go.googlesource.com/crypto"
-    rev = "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06"
-    sha256 = "0sbsgjm6wqa162ssrf1gnpv62ak5wjn1bn8v7sxwwfg8a93z1028"
-
-["golang.org/x/text"]
-  sumVersion = "v0.3.7"
-  ["golang.org/x/text".fetch]
-    type = "git"
-    url = "https://go.googlesource.com/text"
-    rev = "383b2e75a7a4198c42f8f87833eefb772868a56f"
-    sha256 = "0xkw0qvfjyifdqd25y7nxdqkdh92inymw3q7841nricc9s01p4jy"
-
-["golang.org/x/tools"]
-  sumVersion = "v0.0.0-20180917221912-90fa682c2a6e"
-  ["golang.org/x/tools".fetch]
-    type = "git"
-    url = "https://go.googlesource.com/tools"
-    rev = "90fa682c2a6e6a37b3a1364ce2fe1d5e41af9d6d"
-    sha256 = "03ic2xsy51jw9749wl7gszdbz99iijbd2bckgygl6cm9w5m364ak"
+[mod]
+  [mod."github.com/bwmarrin/discordgo"]
+    version = "v0.23.2"
+    hash = "sha256-yb+pC0SfqTZEgkYcBbpIhEjgAjr2pf9slve8mWtn47s="
+  [mod."github.com/eaburns/peggy"]
+    version = "v1.0.0"
+    hash = "sha256-L12jxdzIUNojdi2zhJbharGckTrsogifdTxsQuflLkQ="
+  [mod."github.com/eaburns/pretty"]
+    version = "v1.0.0"
+    hash = "sha256-FpEhv4LBEs4gWnPWuodLfI09ePVsFpLG6C+aWVZeuDU="
+  [mod."github.com/eaburns/toaq"]
+    version = "v0.0.0-20210614121731-80ccb209650b"
+    hash = "sha256-OTfouK200vqAwXE5mz7Yxec5qhjkxnGOU+xr1IAkdUc="
+  [mod."github.com/google/go-cmp"]
+    version = "v0.3.1"
+    hash = "sha256-oUPl5ojctSzSgOSdWB3HeQ5NOcTFtXly7HLSC2IiXLE="
+  [mod."github.com/gorilla/websocket"]
+    version = "v1.4.1"
+    hash = "sha256-+yo/0+zSqf2/dPZyp/9so21r7cfMx1yhxmmOzy2wwQ4="
+  [mod."github.com/velour/chat"]
+    version = "v0.0.0-20180713122344-fd1d1606cb89"
+    hash = "sha256-pr0+BC/SNcajsJm57GjMDoc59GRX+yHD+9FmaGQLsqs="
+  [mod."golang.org/x/crypto"]
+    version = "v0.0.0-20181030102418-4d3f4d9ffa16"
+    hash = "sha256-SIDwR1LoOc67PhvZFazkZSph9rUvuKy1MEFhbqp8emk="
+  [mod."golang.org/x/text"]
+    version = "v0.3.7"
+    hash = "sha256-XH2pUzzQx95O0rak00grQvfACfL+EmZiV7ZzJBkX+XY="
+  [mod."golang.org/x/tools"]
+    version = "v0.0.0-20180917221912-90fa682c2a6e"
+    hash = "sha256-NPoE7uVvwjV2PRIxI3DpegOZc8IuUs4XUJuH3ubKHJg="
