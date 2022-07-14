@@ -262,10 +262,10 @@ func respond(message string, callback func(interface{})) {
 			math = logic.PrettyString(stmt)
 		}
 		callback(parse + math)
-	default:
-		if strings.HasPrefix(cmd, "%") {
-			callback(UNKNOWN)
-		}
+	// default:
+	// 	if strings.HasPrefix(cmd, "%") {
+	// 		callback(UNKNOWN)
+	// 	}
 	}
 }
 
