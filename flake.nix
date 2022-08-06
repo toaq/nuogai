@@ -15,7 +15,8 @@
       let
         pkgs = (import nixpkgs {
           inherit system;
-          overlays = [ gomod2nix.overlays.default ];
+          overlays =
+            [ gomod2nix.overlays.default (_: super: { go = super.go_1_17; }) ];
         }).pkgs;
       in with pkgs;
       let
