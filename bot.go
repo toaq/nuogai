@@ -18,30 +18,25 @@ import (
 	"syscall"
 
 	"git.uakci.pl/toaq/nuogai/vietoaq"
+	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/bwmarrin/discordgo"
 	"github.com/eaburns/toaq/ast"
 	"github.com/eaburns/toaq/logic"
 )
 
 const (
-	lozenge = '▯'
-	HELP    = "\u2003**commands:**" +
-		"\n`%` — Toadua lookup (3 results at a time)" +
-		"\n\u2003(`%37` — show 37 results at a time)" +
-		"\n\u2003(`%!` — show one result, with extra info)" +
-		"\n\u2003(`%!37` — show 37 results, with extra info)" +
-		"\n\u2003(`% 59` — show 59th page of results)" +
-		"\n`%serial` — fagri's serial predicate engine" +
-		"\n`%nui` — uakci's serial predicate engine" +
-		"\n\u2003(`%serial` and `%nui` do not accept tone marks)" +
-		"\n`%hoe` — Hoelaı renderer (font version: v0.341)" +
-		"\n\u2003(`%hoe!` — same as above; raw input)" +
-		"\n`%miu` — jelca's semantic parser"
+	wikiHelpUrl     = "https://toaq.me/Nuogaı"
+	wikiPageUrl     = "https://toaq.me/%s"
+	wikiCommandsUrl = "https://toaq.me/Discord/Help_text?action=render"
+	lozenge         = '▯'
 )
 
-var ports struct {
-	toa, spe, nui string
-}
+var (
+	markdownLinkRegex = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
+	ports             struct {
+		toa, spe, nui string
+	}
+)
 
 func mustGetenv(name string) (env string) {
 	env, ok := os.LookupEnv(name)
@@ -94,6 +89,9 @@ type Response struct {
 }
 
 func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
+	if ms.Author.ID == dg.State.User.ID {
+		return
+	}
 	log.Printf("\n* %s", strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
 	respond(ms.Message.Content,
 		func(r Response) {
@@ -178,12 +176,53 @@ func respond(message string, callback func(Response)) {
 			}
 			return
 		}
-	}
-	switch cmd {
-	case "?":
-		if strings.HasPrefix(strings.TrimSpace(rest), "?") {
+	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 {
+		returnText(fmt.Sprintf(wikiPageUrl, url.PathEscape(cmd[1:])))
+		return
+	} else if strings.HasPrefix(cmd, "!") && len(cmd) > 1 {
+		all, err := get(wikiCommandsUrl)
+		if err != nil {
+			returnText(err.Error())
 			return
 		}
+		converter := md.NewConverter("", true, nil)
+		converted, err := converter.ConvertString(string(all))
+		if err != nil {
+			returnText(err.Error())
+			return
+		}
+		prefix := fmt.Sprintf("# !%s\n", cmd[1:])
+		if cmd[1:] == "all" {
+			names := &strings.Builder{}
+			for _, section := range strings.Split(converted, "##")[1:] {
+				if strings.HasPrefix(section, "# !") {
+					fmt.Fprintf(names, " `%s`", strings.SplitN(section[3:], "\n", 2)[0])
+				} else {
+					fmt.Fprintf(names, "\n**%s**:", strings.SplitN(section[1:], "\n", 2)[0])
+				}
+			}
+			returnText(strings.TrimSpace(names.String()))
+			return
+		}
+		var selected string
+		for _, line := range strings.Split(string(converted), "##") {
+			if strings.HasPrefix(line, prefix) {
+				selected = line[len(prefix):]
+				break
+			}
+		}
+		if selected != "" {
+			selected = markdownLinkRegex.ReplaceAllString(selected, "$2")
+			returnText(selected)
+		} else {
+			returnText(fmt.Sprintf("could not find !%s", cmd[1:]))
+		}
+
+		return
+	}
+
+	switch cmd {
+	case "%vietoaq":
 		returnText(vietoaq.From(rest))
 	case "%serial":
 		if len(rest) == 0 {
@@ -200,7 +239,7 @@ func respond(message string, callback func(Response)) {
 		returnFromRequest(post(u.String(), "application/octet-stream",
 			bytes.NewBufferString(rest)))
 	case "%help":
-		returnText(HELP)
+		returnText(fmt.Sprintf("<%s>", wikiHelpUrl))
 	case "%)":
 		returnText("(%")
 	case "%hoe", "%hoe!":
