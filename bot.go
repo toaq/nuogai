@@ -89,7 +89,7 @@ type Response struct {
 }
 
 func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
-	if ms.Author.ID == dg.State.User.ID {
+	if ms.Author.ID == dg.State.User.ID || ms.Message.Content == "" {
 		return
 	}
 	log.Printf("\n* %s", strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
