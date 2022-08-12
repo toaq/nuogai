@@ -25,9 +25,8 @@ import (
 
 const (
 	lozenge = '▯'
-	myself  = "490175530537058314"
 	HELP    = "\u2003**commands:**" +
-		"\n`%` — Toadūa lookup (3 results at a time)" +
+		"\n`%` — Toadua lookup (3 results at a time)" +
 		"\n\u2003(`%37` — show 37 results at a time)" +
 		"\n\u2003(`%!` — show one result, with extra info)" +
 		"\n\u2003(`%!37` — show 37 results, with extra info)" +
@@ -35,19 +34,14 @@ const (
 		"\n`%serial` — fagri's serial predicate engine" +
 		"\n`%nui` — uakci's serial predicate engine" +
 		"\n\u2003(`%serial` and `%nui` do not accept tone marks)" +
-		"\n`%hoe` — Hoelāı renderer (font version: v0.341)" +
+		"\n`%hoe` — Hoelaı renderer (font version: v0.341)" +
 		"\n\u2003(`%hoe!` — same as above; raw input)" +
 		"\n`%miu` — jelca's semantic parser"
-	UNKNOWN = "unknown command — see `%help` for help"
 )
 
-var (
-	header     = regexp.MustCompile(`^\*\*.*?\*\*: `)
-	whitespace = regexp.MustCompile(`[ ]+`)
-	toaPort    string
-	spePort    string
-	nuiPort    string
-)
+var ports struct {
+	toa, spe, nui string
+}
 
 func mustGetenv(name string) (env string) {
 	env, ok := os.LookupEnv(name)
@@ -58,9 +52,9 @@ func mustGetenv(name string) (env string) {
 }
 
 func init() {
-	spePort = mustGetenv("SPE_PORT")
-	nuiPort = mustGetenv("NUI_PORT")
-	toaPort = mustGetenv("TOA_PORT")
+	ports.spe = mustGetenv("SPE_PORT")
+	ports.nui = mustGetenv("NUI_PORT")
+	ports.toa = mustGetenv("TOA_PORT")
 }
 
 func min(a, b int) int {
@@ -94,42 +88,66 @@ func post(uri string, ct string, body io.Reader) ([]byte, error) {
 	return cont, nil
 }
 
+type Response struct {
+	Text  string
+	Image []byte
+}
+
 func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
 	log.Printf("\n* %s", strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
 	respond(ms.Message.Content,
-		func(i interface{}) {
-			switch t := i.(type) {
-			case string:
-				dg.ChannelMessageSend(ms.Message.ChannelID, t)
-			case []byte:
-				dg.ChannelMessageSendComplex(ms.Message.ChannelID,
-					&discordgo.MessageSend{
-						"", nil, false, []*discordgo.File{
-							&discordgo.File{
-								"toaq.png",
-								"image/png",
-								bytes.NewReader(t),
-							},
-						}, nil, nil, nil,
-					})
+		func(r Response) {
+			files := make([]*discordgo.File, 0, 1)
+			if len(r.Image) > 0 {
+				files = append(files, &discordgo.File{
+					Name:        "toaq.png",
+					ContentType: "image/png",
+					Reader:      bytes.NewReader(r.Image),
+				})
 			}
+			dg.ChannelMessageSendComplex(ms.Message.ChannelID, &discordgo.MessageSend{
+				Content: r.Text,
+				Files:   files,
+			})
 		})
 }
 
-func respond(message string, callback func(interface{})) {
+func respond(message string, callback func(Response)) {
+	returnText := func(content string) {
+		callback(Response{
+			Text: content,
+		})
+	}
+	returnFromRequest := func(res []byte, err error) {
+		if err != nil {
+			log.Println(err)
+			returnText(err.Error())
+		} else {
+			// silly check; probably gonna have to fix this upstream
+			if len(res) >= 8 && bytes.Equal(res[:8], []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}) {
+				callback(Response{
+					Image: res,
+				})
+			} else {
+				callback(Response{
+					Text: string(res),
+				})
+			}
+		}
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("%v", r)
-			callback("lủı sa hủı tủoı")
+			returnText("lủı sa hủı tủoı")
 		}
 	}()
-	message = strings.Trim(
-		header.ReplaceAllLiteralString(message, ""),
-		" \n")
-	parts := whitespace.Split(message, -1)
+
+	message = strings.TrimSpace(message)
+	parts := strings.Fields(message)
 	cmd, args, rest := parts[0], parts[1:], strings.Join(parts[1:], " ")
+	restQuery := url.QueryEscape(rest)
 	if strings.HasPrefix(cmd, "?%") {
-		callback(cmd[1:] + " " + vietoaq.From(rest))
+		returnText(cmd[1:] + " " + vietoaq.From(rest))
 		return
 	}
 	if strings.HasPrefix(cmd, "%") {
@@ -154,52 +172,40 @@ func respond(message string, callback func(interface{})) {
 		}
 		if err == nil {
 			if n >= 0 {
-				Toadua(args, callback, n, showNotes)
+				Toadua(args, returnText, n, showNotes)
 			} else {
-				callback("less than zero, that's quite many")
+				returnText("less than zero, that's quite many")
 			}
 			return
 		}
 	}
 	switch cmd {
 	case "?":
-		if strings.HasPrefix(strings.Trim(rest, " \n"), "?") {
+		if strings.HasPrefix(strings.TrimSpace(rest), "?") {
 			return
 		}
-		callback(vietoaq.From(rest))
+		returnText(vietoaq.From(rest))
 	case "%serial":
 		if len(rest) == 0 {
-			callback("please supply input")
+			returnText("please supply input")
 			return
 		}
-		resp, err := get(fmt.Sprintf("http://localhost:%s/query?%s", spePort, rest))
-		if err != nil {
-			log.Print(err)
-			callback("connectivity error")
-			return
-		}
-		callback(string(resp))
+		returnFromRequest(get(fmt.Sprintf("http://localhost:%s/query?%s", ports.spe, restQuery)))
 	case "%nui":
 		if len(rest) == 0 {
-			callback("please supply input")
+			returnText("please supply input")
 			return
 		}
-		u, err := url.Parse(fmt.Sprintf("http://localhost:%s", nuiPort))
-		resp, err := post(u.String(), "application/octet-stream",
-			bytes.NewBufferString(rest))
-		if err != nil {
-			log.Print(err)
-			callback("connectivity error")
-			return
-		}
-		callback(string(resp))
+		u, _ := url.Parse(fmt.Sprintf("http://localhost:%s", ports.nui))
+		returnFromRequest(post(u.String(), "application/octet-stream",
+			bytes.NewBufferString(rest)))
 	case "%help":
-		callback(HELP)
+		returnText(HELP)
 	case "%)":
-		callback("(%")
+		returnText("(%")
 	case "%hoe", "%hoe!":
 		if len(rest) == 0 {
-			callback("please supply input")
+			returnText("please supply input")
 			return
 		}
 		rest = strings.ReplaceAll(rest, "\t", "\\t")
@@ -234,20 +240,22 @@ func respond(message string, callback func(interface{})) {
 			"png:-").Output()
 		if err != nil {
 			log.Print(err)
-			callback("lủı sa tủoı")
+			returnText("lủı sa tủoı")
 			return
 		}
-		callback(out)
+		callback(Response{
+			Image: out,
+		})
 	case "%miu":
 		if len(rest) == 0 {
-			callback("please supply input")
+			returnText("please supply input")
 			return
 		}
 		input := strings.TrimSpace(rest)
 		p := ast.NewParser(input)
 		text, err := p.Text()
 		if err != nil {
-			callback("syntax error " + err.Error())
+			returnText("syntax error " + err.Error())
 			return
 		}
 		parse := ast.BracesString(text)
@@ -261,17 +269,48 @@ func respond(message string, callback func(interface{})) {
 		} else {
 			math = logic.PrettyString(stmt)
 		}
-		callback(parse + math)
-	// default:
-	// 	if strings.HasPrefix(cmd, "%") {
-	// 		callback(UNKNOWN)
-	// 	}
+		returnText(parse + math)
+	case "%english", "%logic", "%structure":
+		returnFromRequest(get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=%s&text=%s", cmd[1:], restQuery)))
+	case "%tree":
+		file, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=xbar-png&text=%s", restQuery))
+		if err != nil {
+			log.Println(err)
+			returnText(fmt.Sprintf("diagram not available: %s", err.Error()))
+			return
+		}
+		callback(Response{
+			Image: file,
+		})
+	case "%all":
+		sb := &strings.Builder{}
+		for i, name := range []string{"english", "structure", "logic"} {
+			res, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=%s&text=%s", name, restQuery))
+			if err != nil {
+				log.Println(err)
+				returnText(err.Error())
+				return
+			}
+			if i != 0 {
+				sb.WriteRune('\n')
+			}
+			sb.WriteString(strings.TrimSpace(string(res)))
+		}
+		file, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=xbar-png&text=%s", restQuery))
+		if err != nil {
+			log.Println(err)
+			fmt.Fprintf(sb, "diagram not available: %v", err.Error())
+		}
+		callback(Response{
+			Text:  sb.String(),
+			Image: file,
+		})
 	}
 }
 
-func Toadua(args []string, callback func(interface{}), howMany int, showNotes bool) {
+func Toadua(args []string, returnText func(string), howMany int, showNotes bool) {
 	if len(args) == 0 {
-		callback("please supply a query")
+		returnText("please supply a query")
 		return
 	}
 	page, err := strconv.Atoi(args[0])
@@ -290,14 +329,14 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 	})
 	if err != nil {
 		log.Print(err)
-		callback("error")
+		returnText("error")
 		return
 	}
-	raw, err := http.Post(fmt.Sprintf(`http://localhost:%s/api`, toaPort),
+	raw, err := http.Post(fmt.Sprintf(`http://localhost:%s/api`, ports.toa),
 		"application/json", bytes.NewReader(mars))
 	if err != nil {
 		log.Print(err)
-		callback("connectivity error")
+		returnText(err.Error())
 		return
 	}
 	var resp struct {
@@ -318,27 +357,27 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 	body, err := ioutil.ReadAll(raw.Body)
 	if err != nil {
 		log.Print(err)
-		callback("connectivity error")
+		returnText(err.Error())
 		return
 	}
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		log.Print(err)
-		callback("parse error")
+		returnText("parse error")
 		return
 	}
 	if !resp.Success {
 		log.Print(resp.Error)
-		callback("search failed: " + resp.Error)
+		returnText("search failed: " + resp.Error)
 		return
 	}
 	if len(resp.Entries) == 0 {
-		callback("results empty")
+		returnText("results empty")
 		return
 	}
 	first := (page - 1) * howMany
 	if len(resp.Entries) <= first {
-		callback(fmt.Sprintf("invalid page number (%d results)", len(resp.Entries)))
+		returnText(fmt.Sprintf("invalid page number (%d results)", len(resp.Entries)))
 		return
 	}
 	last := min(first+howMany, len(resp.Entries))
@@ -377,12 +416,12 @@ func Toadua(args []string, callback func(interface{}), howMany int, showNotes bo
 		old := soFar
 		soFar = b.String()
 		if len(soFar) > 2000 {
-			callback(old)
+			returnText(old)
 			b.Reset()
 			b.WriteString(soFar[len(old):])
 		}
 	}
-	callback(b.String())
+	returnText(b.String())
 }
 
 func ToaduaQuery(s string) interface{} {
