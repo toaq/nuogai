@@ -68,6 +68,9 @@ func get(uri string) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+	if resp.StatusCode != 200 {
+		return []byte{}, fmt.Errorf("%s: %s", resp.Status, cont)
+	}
 	return cont, nil
 }
 
@@ -80,6 +83,9 @@ func post(uri string, ct string, body io.Reader) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+	if resp.StatusCode != 200 {
+		return []byte{}, fmt.Errorf("%s: %s", resp.Status, cont)
+	}
 	return cont, nil
 }
 
@@ -89,10 +95,18 @@ type Response struct {
 }
 
 func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
-	if ms.Author.ID == dg.State.User.ID || ms.Message.Content == "" {
+	if ms.Message.Content == "" {
 		return
 	}
-	log.Printf("\n* %s", strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
+	own := ms.Author.ID == dg.State.User.ID
+	sigil := ">"
+	if own {
+		sigil = "<"
+	}
+	log.Printf("\n%s %s", sigil, strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
+	if own {
+		return
+	}
 	respond(ms.Message.Content,
 		func(r Response) {
 			files := make([]*discordgo.File, 0, 1)
@@ -121,7 +135,7 @@ func respond(message string, callback func(Response)) {
 			log.Println(err)
 			returnText(err.Error())
 		} else {
-			// silly check; probably gonna have to fix this upstream
+			// silly check
 			if len(res) >= 8 && bytes.Equal(res[:8], []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}) {
 				callback(Response{
 					Image: res,
@@ -177,9 +191,9 @@ func respond(message string, callback func(Response)) {
 			return
 		}
 	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 {
-		returnText(fmt.Sprintf(wikiPageUrl, url.PathEscape(cmd[1:])))
+		returnText(fmt.Sprintf(wikiPageUrl, strings.ReplaceAll(strings.TrimSpace(cmd[1:]+" "+rest), " ", "_")))
 		return
-	} else if strings.HasPrefix(cmd, "!") && len(cmd) > 1 {
+	} else if strings.HasPrefix(cmd, "!") && len(cmd) > 1 && cmd != "!iamvoicechat" {
 		all, err := get(wikiCommandsUrl)
 		if err != nil {
 			returnText(err.Error())
@@ -192,7 +206,7 @@ func respond(message string, callback func(Response)) {
 			return
 		}
 		prefix := fmt.Sprintf("# !%s\n", cmd[1:])
-		if cmd[1:] == "all" {
+		if cmd[1:] == "all" || cmd[1:] == "commands" {
 			names := &strings.Builder{}
 			for _, section := range strings.Split(converted, "##")[1:] {
 				if strings.HasPrefix(section, "# !") {
@@ -338,7 +352,7 @@ func respond(message string, callback func(Response)) {
 		file, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=xbar-png&text=%s", restQuery))
 		if err != nil {
 			log.Println(err)
-			fmt.Fprintf(sb, "diagram not available: %v", err.Error())
+			fmt.Fprintf(sb, "\ndiagram not available: %v", err.Error())
 		}
 		callback(Response{
 			Text:  sb.String(),
