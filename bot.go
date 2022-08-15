@@ -32,8 +32,9 @@ const (
 )
 
 var (
-	markdownLinkRegex = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
-	ports             struct {
+	markdownLinkRe = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
+	alphaHyphenRe  = regexp.MustCompile(`^[a-z-]+$`)
+	ports          struct {
 		toa, spe, nui string
 	}
 )
@@ -191,9 +192,17 @@ func respond(message string, callback func(Response)) {
 			return
 		}
 	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 {
-		returnText(fmt.Sprintf(wikiPageUrl, strings.ReplaceAll(strings.TrimSpace(cmd[1:]+" "+rest), " ", "_")))
+		fragments := strings.Split(strings.TrimSpace(cmd[1:]+" "+rest), "/")
+		for i, fragment := range fragments {
+			_, offset, err := strings.NewReader(fragment).ReadRune()
+			if err != nil {
+				continue
+			}
+			fragments[i] = strings.ToUpper(fragment[:offset]) + strings.ReplaceAll(fragment[offset:], " ", "_")
+		}
+		returnText(fmt.Sprintf(wikiPageUrl, strings.Join(fragments, "/")))
 		return
-	} else if strings.HasPrefix(cmd, "!") && len(cmd) > 1 && cmd != "!iamvoicechat" {
+	} else if strings.HasPrefix(cmd, "!") && len(args) == 0 && alphaHyphenRe.MatchString(cmd[1:]) && cmd != "!iamvoicechat" {
 		all, err := get(wikiCommandsUrl)
 		if err != nil {
 			returnText(err.Error())
@@ -226,7 +235,7 @@ func respond(message string, callback func(Response)) {
 			}
 		}
 		if selected != "" {
-			selected = markdownLinkRegex.ReplaceAllString(selected, "$2")
+			selected = markdownLinkRe.ReplaceAllString(selected, "$2")
 			returnText(selected)
 		} else {
 			returnText(fmt.Sprintf("could not find !%s", cmd[1:]))
