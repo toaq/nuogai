@@ -159,10 +159,6 @@ func respond(message string, callback func(Response)) {
 	parts := strings.Fields(message)
 	cmd, args, rest := parts[0], parts[1:], strings.Join(parts[1:], " ")
 	restQuery := url.QueryEscape(rest)
-	if strings.HasPrefix(cmd, "?%") {
-		returnText(cmd[1:] + " " + vietoaq.From(rest))
-		return
-	}
 	if strings.HasPrefix(cmd, "%") {
 		cmd_ := cmd[1:]
 		showNotes := false
@@ -191,7 +187,7 @@ func respond(message string, callback func(Response)) {
 			}
 			return
 		}
-	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 {
+	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 && cmd[1] != '?' {
 		fragments := strings.Split(strings.TrimSpace(cmd[1:]+" "+rest), "/")
 		for i, fragment := range fragments {
 			_, offset, err := strings.NewReader(fragment).ReadRune()
