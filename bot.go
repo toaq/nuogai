@@ -118,8 +118,23 @@ func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
 					Reader:      bytes.NewReader(r.Image),
 				})
 			}
+			var content string
+			if len(r.Text) <= 2000 {
+				content = r.Text
+			} else {
+				reader := strings.NewReader(r.Text)
+				i, offset := 0, 0
+				for i < 2000 {
+					_, size, err := reader.ReadRune()
+					if err != nil {
+						break
+					}
+					offset, i = offset+size, i+1
+				}
+				content = r.Text[:offset]
+			}
 			dg.ChannelMessageSendComplex(ms.Message.ChannelID, &discordgo.MessageSend{
-				Content: r.Text,
+				Content: content,
 				Files:   files,
 			})
 		})
