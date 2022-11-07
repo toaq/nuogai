@@ -174,34 +174,17 @@ func respond(message string, callback func(Response)) {
 	parts := strings.Fields(message)
 	cmd, args, rest := parts[0], parts[1:], strings.Join(parts[1:], " ")
 	restQuery := url.QueryEscape(rest)
-	if strings.HasPrefix(cmd, "%") {
-		cmd_ := cmd[1:]
-		showNotes := false
-		if strings.HasPrefix(cmd_, "!") {
-			cmd_ = cmd_[1:]
-			showNotes = true
-		}
-		var (
-			n   int
-			err error
-		)
-		if len(cmd_) > 0 {
-			n, err = strconv.Atoi(cmd_)
-		} else {
-			if showNotes {
-				n = 1
-			} else {
-				n = 3
+	if matches := toaduaCmdRe.FindStringSubmatch(cmd); matches != nil {
+		n := 1
+		if matches[1] != "" {
+			var err error
+			n, err = strconv.Atoi(matches[1])
+			if err != nil {
+				returnText("wrong kinda number")
 			}
 		}
-		if err == nil {
-			if n >= 0 {
-				Toadua(args, returnText, n, showNotes)
-			} else {
-				returnText("less than zero, that's quite many")
-			}
-			return
-		}
+		Toadua(args, n, returnText)
+		return
 	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 && cmd[1] != '?' {
 		fragments := strings.Split(strings.TrimSpace(cmd[1:]+" "+rest), "/")
 		for i, fragment := range fragments {
@@ -379,7 +362,30 @@ func respond(message string, callback func(Response)) {
 	}
 }
 
-func Toadua(args []string, returnText func(string), howMany int, showNotes bool) {
+type ToaduaRequest struct {
+	Action             string      `json:"action"`
+	Query              interface{} `json:"query"`
+	PreferredScope     string      `json:"preferred_scope"`
+	PreferredScopeBias float64     `json:"preferred_scope_bias"`
+}
+
+type ToaduaResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+	Entries []struct {
+		Id    string `json:"id"`
+		User  string `json:"user"`
+		Head  string `json:"head"`
+		Body  string `json:"body"`
+		Score int    `json:"score"`
+		Notes []struct {
+			User    string `json:"user"`
+			Content string `json:"content"`
+		} `json:"notes"`
+	} `json:"results"`
+}
+
+func Toadua(args []string, howMany int, returnText func(string)) {
 	if len(args) == 0 {
 		returnText("please supply a query")
 		return
@@ -391,12 +397,11 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 		args = args[1:]
 	}
 	query := strings.Join(args, " ")
-	mars, err := json.Marshal(struct {
-		S string      `json:"action"`
-		I interface{} `json:"query"`
-	}{
-		"search",
-		ToaduaQuery(query),
+	mars, err := json.Marshal(ToaduaRequest{
+		Action:             "search",
+		Query:              ToaduaQuery(query),
+		PreferredScope:     "en",
+		PreferredScopeBias: 16,
 	})
 	if err != nil {
 		log.Print(err)
@@ -410,21 +415,7 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 		returnText(err.Error())
 		return
 	}
-	var resp struct {
-		Success bool   `json:"success"`
-		Error   string `json:"error"`
-		Entries []struct {
-			Id    string `json:"id"`
-			User  string `json:"user"`
-			Head  string `json:"head"`
-			Body  string `json:"body"`
-			Score int    `json:"score"`
-			Notes []struct {
-				User    string `json:"user"`
-				Content string `json:"content"`
-			} `json:"notes"`
-		} `json:"results"`
-	}
+	var resp ToaduaResponse
 	body, err := ioutil.ReadAll(raw.Body)
 	if err != nil {
 		log.Print(err)
@@ -454,7 +445,11 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 	last := min(first+howMany, len(resp.Entries))
 	var b strings.Builder
 	b.Grow(2000)
-	fmt.Fprintf(&b, "\u2003(%d–%d/%d)", first+1, last, len(resp.Entries))
+	searchProngs := strconv.Itoa(first + 1)
+	if last > first+1 {
+		searchProngs += "–" + strconv.Itoa(last)
+	}
+	fmt.Fprintf(&b, "\u2003(%s/%d)", searchProngs, len(resp.Entries))
 	soFar := b.String()
 	for _, e := range resp.Entries[first:last] {
 		// if i != 0 {
@@ -462,11 +457,7 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 		// }
 		// b.WriteString(" — ")
 		b.WriteString("**" + e.Head + "**")
-		if showNotes {
-			fmt.Fprintf(&b, " (%s)", e.User)
-		} else if e.User == "official" {
-			b.WriteString(" ❦")
-		}
+		fmt.Fprintf(&b, " (%s)", e.User)
 		if e.Score != 0 {
 			b.WriteString(" ")
 			if e.Score > 0 {
@@ -478,11 +469,8 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 		// b.WriteString(" — ")
 		b.WriteString("\n\u2003")
 		b.WriteString(strings.Join(strings.Split(e.Body, "\n"), "\n\u2003"))
-		if showNotes {
-			b.WriteString("")
-			for _, note := range e.Notes {
-				fmt.Fprintf(&b, "\n\u2003\u2003• (%s) %s", note.User, note.Content)
-			}
+		for _, note := range e.Notes {
+			fmt.Fprintf(&b, "\n\u2003\u2003• (%s) %s", note.User, note.Content)
 		}
 		old := soFar
 		soFar = b.String()
