@@ -2,15 +2,17 @@
   inputs = {
     flake-utils.url = "github:numtide/flake-utils/master";
     gomod2nix.url = "github:tweag/gomod2nix/master";
-    nuigui-upstream.url = "github:uakci/nuigui/master";
-    nuigui-upstream.flake = false;
-    serial-predicate-engine-upstream.url =
-      "github:acotis/serial-predicate-engine/master";
-    serial-predicate-engine-upstream.flake = false;
+    toaq-dictionary = {
+      url = "github:toaq/dictionary/master";
+      flake = false;
+    };
+    zugai = {
+      url = "github:toaq/zugai/main";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, gomod2nix, nuigui-upstream
-    , serial-predicate-engine-upstream, flake-utils, ... }:
+  outputs = { self, nixpkgs, gomod2nix, flake-utils, zugai, toaq-dictionary, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = (import nixpkgs {
@@ -26,55 +28,32 @@
         '';
         imagemagickWithPango = imagemagick.overrideAttrs
           (a: { buildInputs = a.buildInputs ++ [ pango ]; });
-        schemePkgs = lib.mapAttrs (name:
-          { src, install, patches }:
-          pkgs.stdenv.mkDerivation {
-            inherit src name patches;
-            buildInputs = [ guile ];
-            installPhase = ''
-              mkdir -p $out/bin
-              cp -r ./* $out
-              cp "${writers.writeBash "${name}-start" install}" $out/bin/${name}
-            '';
-          }) {
-            nuigui = {
-              src = nuigui-upstream;
-              patches = [ ./patches/nui.patch ];
-              install = ''
-                cd $(dirname $0)/../
-                ${guile}/bin/guile web.scm
-              '';
-            };
-            serial-predicate-engine = {
-              src = serial-predicate-engine-upstream;
-              patches = [ ./patches/spe.patch ];
-              install = ''
-                cd $(dirname $0)/../web/
-                ${guile}/bin/guile webservice.scm
-              '';
-            };
-          };
+        expand-serial = runCommand "expand-serial" { } ''
+          mkdir -p $out/bin
+          tee >$out/bin/expand-serial <<EOF
+          #!/bin/sh
+          ${pkgs.python3}/bin/python ${zugai}/src/expand_serial.py ${toaq-dictionary}/dictionary.json \$@
+          EOF
+          chmod +x $out/bin/expand-serial
+        '';
         nuogai = buildGoApplication {
           vendorSha256 = null;
           runVend = true;
           name = "nuogai";
           src = ./.;
           modules = ./gomod2nix.toml;
-          buildInputs = builtins.attrValues schemePkgs;
           nativeBuildInputs = [ makeWrapper ];
           postFixup = ''
             wrapProgram $out/bin/nuogai --prefix PATH : ${
-              lib.makeBinPath [ imagemagickWithPango ]
+              lib.makeBinPath [ imagemagickWithPango expand-serial ]
             }
           '';
         };
       in {
-        defaultPackage = nuogai;
-        packages = schemePkgs // {
-          inherit toaqScript nuogai imagemagickWithPango;
-        };
         nixosModule = { config, pkgs, lib, ... }@args:
           import ./module.nix (args // { inherit self system; });
         devShells.${system} = gomod2nix.devShells.${system};
+        defaultPackage = nuogai;
+        packages = { inherit nuogai expand-serial toaqScript; };
       });
 }

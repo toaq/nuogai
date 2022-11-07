@@ -3,45 +3,26 @@ let cfg = config.services.nuogai;
 in with lib; {
   options.services.nuogai = {
     enable = mkEnableOption "Enables the nuogaı Discord Bot";
-    ports = listToAttrs
-      (map (flip attrsets.nameValuePair (mkOption { type = types.port; })) [
-        "nuigui"
-        "serial-predicate-engine"
-        "toadua"
-      ]);
+    toaduaHost = mkOption { type = types.str; };
+    zugaiHost = mkOption { type = types.str; };
     tokenPath = mkOption { type = types.path; };
   };
-  config = let enable = cfg.enable;
-  in {
-    fonts.fonts = optionals enable [ self.packages.${system}.toaqScript ];
-    systemd.services = optionalAttrs enable (mapAttrs (k: v:
-      {
-        wants = [ "network-online.target" ];
-      } // (v self.packages.${system}.${k})) {
-        nuogai = pkg: {
-          description = "Toaq Discord bot";
-          wantedBy = [ "multi-user.target" ];
-          wants = [ "nuigui.service" "serial-predicate-engine.service" ];
-          environment = {
-            NUI_PORT = toString cfg.ports.nuigui;
-            SPE_PORT = toString cfg.ports.serial-predicate-engine;
-            TOA_PORT = toString cfg.ports.toadua;
-          };
-          script = ''
-            export TOKEN=$(cat ${cfg.tokenPath})
-            ${pkg}/bin/nuogai
-          '';
-        };
-        nuigui = pkg: {
-          serviceConfig.WorkingDirectory = pkg;
-          serviceConfig.ExecStart = "${pkg}/bin/nuigui";
-          environment.PORT = toString cfg.ports.nuigui;
-        };
-        serial-predicate-engine = pkg: {
-          serviceConfig.WorkingDirectory = pkg;
-          serviceConfig.ExecStart = "${pkg}/bin/serial-predicate-engine";
-          environment.PORT = toString cfg.ports.serial-predicate-engine;
-        };
-      });
+  config = {
+    fonts.fonts = optionals cfg.enable [ self.packages.${system}.toaqScript ];
+    services.nuogai.zugaiHost = lib.mkDefault "https://zugai.toaq.me";
+    systemd.services.nuogai = {
+      inherit (cfg) enable;
+      description = "Toaq Discord bot";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "network-online.target" ];
+      environment = {
+        TOADUA_HOST = cfg.toaduaHost;
+        ZUGAI_HOST = cfg.zugaiHost;
+      };
+      script = ''
+        export NUOGAI_TOKEN=$(cat ${cfg.tokenPath})
+        ${self.packages.${system}.nuogai}/bin/nuogai
+      '';
+    };
   };
 }

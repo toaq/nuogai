@@ -28,15 +28,16 @@ const (
 	wikiHelpUrl     = "https://toaq.me/Nuogaı"
 	wikiPageUrl     = "https://toaq.me/%s"
 	wikiCommandsUrl = "https://toaq.me/Discord/Help_text?action=render"
+	toaduaUrl       = "%s/api"
+	zugaiUrl        = "%s/zugai?to=%s&text=%s"
 	lozenge         = '▯'
 )
 
 var (
-	markdownLinkRe = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
-	alphaHyphenRe  = regexp.MustCompile(`^[a-z-]+$`)
-	ports          struct {
-		toa, spe, nui string
-	}
+	markdownLinkRe        = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
+	alphaHyphenRe         = regexp.MustCompile(`^[a-z-]+$`)
+	toaduaCmdRe           = regexp.MustCompile(`^%([1-9][0-9]*)?$`)
+	toaduaHost, zugaiHost string
 )
 
 func mustGetenv(name string) (env string) {
@@ -48,9 +49,8 @@ func mustGetenv(name string) (env string) {
 }
 
 func init() {
-	ports.spe = mustGetenv("SPE_PORT")
-	ports.nui = mustGetenv("NUI_PORT")
-	ports.toa = mustGetenv("TOA_PORT")
+	toaduaHost = mustGetenv("TOADUA_HOST")
+	zugaiHost = mustGetenv("ZUGAI_HOST")
 }
 
 func min(a, b int) int {
@@ -263,15 +263,13 @@ func respond(message string, callback func(Response)) {
 			returnText("please supply input")
 			return
 		}
-		returnFromRequest(get(fmt.Sprintf("http://localhost:%s/query?%s", ports.spe, restQuery)))
-	case "%nui":
-		if len(rest) == 0 {
-			returnText("please supply input")
+		out, err := exec.Command("expand-serial", rest).Output()
+		if err != nil {
+			log.Print(err)
+			returnText("lủı sa tủoı")
 			return
 		}
-		u, _ := url.Parse(fmt.Sprintf("http://localhost:%s", ports.nui))
-		returnFromRequest(post(u.String(), "application/octet-stream",
-			bytes.NewBufferString(rest)))
+		returnText(string(out))
 	case "%help":
 		returnText(fmt.Sprintf("<%s>", wikiHelpUrl))
 	case "%)":
@@ -344,9 +342,9 @@ func respond(message string, callback func(Response)) {
 		}
 		returnText(parse + math)
 	case "%english", "%logic", "%structure":
-		returnFromRequest(get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=%s&text=%s", cmd[1:], restQuery)))
+		returnFromRequest(get(fmt.Sprintf(zugaiUrl, zugaiHost, cmd[1:], restQuery)))
 	case "%tree":
-		file, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=xbar-png&text=%s", restQuery))
+		file, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, "xbar-png", restQuery))
 		if err != nil {
 			log.Println(err)
 			returnText(fmt.Sprintf("diagram not available: %s", err.Error()))
@@ -358,7 +356,7 @@ func respond(message string, callback func(Response)) {
 	case "%all":
 		sb := &strings.Builder{}
 		for i, name := range []string{"english", "structure", "logic"} {
-			res, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=%s&text=%s", name, restQuery))
+			res, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, name, restQuery))
 			if err != nil {
 				log.Println(err)
 				returnText(err.Error())
@@ -369,7 +367,7 @@ func respond(message string, callback func(Response)) {
 			}
 			sb.WriteString(strings.TrimSpace(string(res)))
 		}
-		file, err := get(fmt.Sprintf("https://zugai.toaq.me/zugai?to=xbar-png&text=%s", restQuery))
+		file, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, "xbar-png", restQuery))
 		if err != nil {
 			log.Println(err)
 			fmt.Fprintf(sb, "\ndiagram not available: %v", err.Error())
@@ -405,7 +403,7 @@ func Toadua(args []string, returnText func(string), howMany int, showNotes bool)
 		returnText("error")
 		return
 	}
-	raw, err := http.Post(fmt.Sprintf(`http://localhost:%s/api`, ports.toa),
+	raw, err := http.Post(fmt.Sprintf(toaduaUrl, toaduaHost),
 		"application/json", bytes.NewReader(mars))
 	if err != nil {
 		log.Print(err)
@@ -589,7 +587,7 @@ func Hoekai(s string) string {
 }
 
 func main() {
-	dg, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
+	dg, err := discordgo.New("Bot " + os.Getenv("NUOGAI_TOKEN"))
 	if err != nil {
 		panic(err)
 	}

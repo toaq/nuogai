@@ -66,46 +66,29 @@
         "type": "indirect"
       }
     },
-    "nuigui-upstream": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1551541396,
-        "narHash": "sha256-PZUzgumsvIpzEgODVpiBKlZzZQHXKhS+3lOB+2EDeeQ=",
-        "owner": "uakci",
-        "repo": "nuigui",
-        "rev": "87d41886f7c4693dfc5e3016799232c7e15e4c81",
-        "type": "github"
-      },
-      "original": {
-        "owner": "uakci",
-        "ref": "master",
-        "repo": "nuigui",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
         "gomod2nix": "gomod2nix",
         "nixpkgs": "nixpkgs_2",
-        "nuigui-upstream": "nuigui-upstream",
-        "serial-predicate-engine-upstream": "serial-predicate-engine-upstream"
+        "toaq-dictionary": "toaq-dictionary",
+        "zugai": "zugai"
       }
     },
-    "serial-predicate-engine-upstream": {
+    "toaq-dictionary": {
       "flake": false,
       "locked": {
-        "lastModified": 1546479877,
-        "narHash": "sha256-jVDNyfYWlk5qYsZSQjcGdI4hdEKKdSciz6QK0nAqKGs=",
-        "owner": "acotis",
-        "repo": "serial-predicate-engine",
-        "rev": "9e02baf711c0b7402da2eeb50b8644bf7b6e415f",
+        "lastModified": 1660491489,
+        "narHash": "sha256-H/e9i0Y6ugFQhqKxasJQoSBlSNU8xUOuF5H/vpxnTiQ=",
+        "owner": "toaq",
+        "repo": "dictionary",
+        "rev": "aa22bbb6b5e4b898143b3a66bfee9890a640aca5",
         "type": "github"
       },
       "original": {
-        "owner": "acotis",
+        "owner": "toaq",
         "ref": "master",
-        "repo": "serial-predicate-engine",
+        "repo": "dictionary",
         "type": "github"
       }
     },
@@ -121,6 +104,23 @@
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "zugai": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1667776834,
+        "narHash": "sha256-RATF7x6V2a1IKZGAU6NcM0KrKFL4MgGu4Jas/d/IWFQ=",
+        "owner": "toaq",
+        "repo": "zugai",
+        "rev": "38646646b34bb72d1ef01c8d37fcab3d238c5f0b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "toaq",
+        "ref": "main",
+        "repo": "zugai",
         "type": "github"
       }
     }
