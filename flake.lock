@@ -78,17 +78,17 @@
     "toaq-dictionary": {
       "flake": false,
       "locked": {
-        "lastModified": 1660135967,
-        "narHash": "sha256-4HiO4CfXD6dTrnHtOhGcqX2bNNMf+aq2NHQB+0iNXFY=",
+        "lastModified": 1660491489,
+        "narHash": "sha256-H/e9i0Y6ugFQhqKxasJQoSBlSNU8xUOuF5H/vpxnTiQ=",
         "owner": "toaq",
         "repo": "dictionary",
-        "rev": "31d1e5d45f7870b0de66c9a546d6fe0f18fad4f9",
+        "rev": "aa22bbb6b5e4b898143b3a66bfee9890a640aca5",
         "type": "github"
       },
       "original": {
         "owner": "toaq",
+        "ref": "master",
         "repo": "dictionary",
-        "rev": "31d1e5d45f7870b0de66c9a546d6fe0f18fad4f9",
         "type": "github"
       }
     },

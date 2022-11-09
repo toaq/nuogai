@@ -2,14 +2,8 @@
   inputs = {
     flake-utils.url = "github:numtide/flake-utils/master";
     gomod2nix.url = "github:tweag/gomod2nix/master";
-    toaq-dictionary = {
-      url = "github:toaq/dictionary?rev=31d1e5d45f7870b0de66c9a546d6fe0f18fad4f9";
-      flake = false;
-    };
-    zugai = {
-      url = "github:toaq/zugai/main";
-      flake = false;
-    };
+    toaq-dictionary = { url = "github:toaq/dictionary/master"; flake = false; };
+    zugai = { url = "github:toaq/zugai/main"; flake = false; };
   };
 
   outputs = { self, nixpkgs, gomod2nix, flake-utils, zugai, toaq-dictionary, ... }:
