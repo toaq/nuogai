@@ -118,11 +118,11 @@ func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
 					Reader:      bytes.NewReader(r.Image),
 				})
 			}
-			var content string
-			if len(r.Text) <= 2000 {
-				content = r.Text
-			} else {
-				reader := strings.NewReader(r.Text)
+			content := strings.TrimSpace(r.Text)
+			if len(content) == 0 && len(files) == 0 {
+				content = "(nothing was returned)"
+			} else if len(content) > 2000 {
+				reader := strings.NewReader(content)
 				i, offset := 0, 0
 				for i < 2000 {
 					_, size, err := reader.ReadRune()
@@ -131,7 +131,7 @@ func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
 					}
 					offset, i = offset+size, i+1
 				}
-				content = r.Text[:offset]
+				content = content[:offset]
 			}
 			dg.ChannelMessageSendComplex(ms.Message.ChannelID, &discordgo.MessageSend{
 				Content: content,
@@ -146,23 +146,7 @@ func respond(message string, callback func(Response)) {
 			Text: content,
 		})
 	}
-	returnFromRequest := func(res []byte, err error) {
-		if err != nil {
-			log.Println(err)
-			returnText(err.Error())
-		} else {
-			// silly check
-			if len(res) >= 8 && bytes.Equal(res[:8], []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}) {
-				callback(Response{
-					Image: res,
-				})
-			} else {
-				callback(Response{
-					Text: string(res),
-				})
-			}
-		}
-	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("%v", r)
@@ -324,41 +308,60 @@ func respond(message string, callback func(Response)) {
 			math = logic.PrettyString(stmt)
 		}
 		returnText(parse + math)
-	case "%english", "%logic", "%structure":
-		returnFromRequest(get(fmt.Sprintf(zugaiUrl, zugaiHost, cmd[1:], restQuery)))
-	case "%tree":
-		file, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, "xbar-png", restQuery))
-		if err != nil {
-			log.Println(err)
-			returnText(fmt.Sprintf("diagram not available: %s", err.Error()))
-			return
-		}
-		callback(Response{
-			Image: file,
-		})
-	case "%all":
+	case "%english", "%logic", "%structure", "%tree", "%all":
 		sb := &strings.Builder{}
-		for i, name := range []string{"english", "structure", "logic"} {
-			res, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, name, restQuery))
+		var file []byte
+		var formats []string
+		if cmd == "%all" {
+			formats = []string{"english", "structure", "logic", "tree"}
+		} else {
+			formats = []string{cmd[1:]}
+		}
+		errorCount := 0
+		for i, format := range formats {
+			res, err := Zugai(restQuery, format)
 			if err != nil {
-				log.Println(err)
-				returnText(err.Error())
-				return
+				errorCount++
+				if errorCount == len(formats) {
+					sb = &strings.Builder{}
+				} else if i != len(formats)-1 {
+					res = Response{Text: strings.Split(res.Text, "\n")[0]}
+				}
 			}
+			file = res.Image
 			if i != 0 {
 				sb.WriteRune('\n')
 			}
-			sb.WriteString(strings.TrimSpace(string(res)))
-		}
-		file, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, "xbar-png", restQuery))
-		if err != nil {
-			log.Println(err)
-			fmt.Fprintf(sb, "\ndiagram not available: %v", err.Error())
+			text := strings.TrimSpace(string(res.Text))
+			if len(text) == 0 && len(res.Image) == 0 {
+				fmt.Fprintf(sb, "(%%%s returned nothing)", format)
+			} else {
+				sb.WriteString(text)
+			}
 		}
 		callback(Response{
 			Text:  sb.String(),
 			Image: file,
 		})
+	}
+}
+
+func Zugai(input, resource string) (Response, error) {
+	isTree := resource == "tree"
+	internalName := resource
+	if isTree {
+		internalName = "xbar-png"
+	}
+	file, err := get(fmt.Sprintf(zugaiUrl, zugaiHost, internalName, input))
+	if err != nil {
+		err = fmt.Errorf("%s not available: %w", resource, err)
+		log.Println(err)
+		return Response{Text: err.Error()}, err
+	}
+	if isTree {
+		return Response{Image: file}, nil
+	} else {
+		return Response{Text: string(file)}, nil
 	}
 }
 
