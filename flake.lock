@@ -110,11 +110,11 @@
     "zugai": {
       "flake": false,
       "locked": {
-        "lastModified": 1668001766,
-        "narHash": "sha256-dzyKmChiysTxx2Jf5x00KQTt2DFPTbzndDOt3TROEnI=",
+        "lastModified": 1668009602,
+        "narHash": "sha256-4xWubdXCJV3bO6Ke3x2FPDz2JutKk25NhHWuQfSu35I=",
         "owner": "toaq",
         "repo": "zugai",
-        "rev": "8d6658ba6e3698b394de98162586e6baa1ea1611",
+        "rev": "ca564e963a47f92457a9694043d6c18ede336ccb",
         "type": "github"
       },
       "original": {
