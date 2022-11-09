@@ -26,7 +26,10 @@
           mkdir -p $out/bin
           tee >$out/bin/expand-serial <<EOF
           #!/bin/sh
-          ${pkgs.python3}/bin/python ${zugai}/src/expand_serial.py ${toaq-dictionary}/dictionary.json \$@
+          ${pkgs.python3}/bin/python ${zugai}/src/expand_serial.py \
+            -d ${toaq-dictionary}/dictionary.json \
+            -d ${zugai}/data/supplement.json \
+            -- "\$@"
           EOF
           chmod +x $out/bin/expand-serial
         '';
