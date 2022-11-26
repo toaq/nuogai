@@ -1,5 +1,6 @@
 {
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/release-22.05";
     flake-utils.url = "github:numtide/flake-utils/master";
     gomod2nix.url = "github:tweag/gomod2nix/master";
     toaq-dictionary = { url = "github:toaq/dictionary/master"; flake = false; };
@@ -11,7 +12,8 @@
       let
         pkgs = (import nixpkgs {
           inherit system;
-          overlays = [ gomod2nix.overlays.default ];
+          overlays =
+            [ gomod2nix.overlays.default (_: super: { go = super.go_1_17; }) ];
         }).pkgs;
       in with pkgs;
       let
