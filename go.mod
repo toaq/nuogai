@@ -1,4 +1,4 @@
-module git.uakci.pl/toaq/nuogai
+module git.uakci.space/toaq/nuogai
 
 go 1.17
 

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"syscall"
 
-	"git.uakci.pl/toaq/nuogai/vietoaq"
+	"git.uakci.space/toaq/nuogai/vietoaq"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/bwmarrin/discordgo"
 	"github.com/eaburns/toaq/ast"

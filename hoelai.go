@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"git.uakci.pl/toaq/nuogai/vietoaq"
+	"git.uakci.space/toaq/nuogai/vietoaq"
 	"strings"
 )
 
