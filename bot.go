@@ -36,6 +36,7 @@ const (
 var (
 	markdownLinkRe        = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
 	alphaHyphenRe         = regexp.MustCompile(`^[a-z-]+$`)
+	allBangsRe            = regexp.MustCompile(`^[!?]*$`)
 	toaduaCmdRe           = regexp.MustCompile(`^%([1-9][0-9]*)?$`)
 	toaduaHost, zugaiHost string
 )
@@ -169,7 +170,7 @@ func respond(message string, callback func(Response)) {
 		}
 		Toadua(args, n, returnText)
 		return
-	} else if strings.HasPrefix(cmd, "?") && len(cmd) > 1 && cmd[1] != '?' {
+	} else if strings.HasPrefix(cmd, "?") && !allBangsRe.MatchString(cmd) {
 		fragments := strings.Split(strings.TrimSpace(cmd[1:]+" "+rest), "/")
 		for i, fragment := range fragments {
 			_, offset, err := strings.NewReader(fragment).ReadRune()
