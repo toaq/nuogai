@@ -106,7 +106,7 @@ func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
 		sigil = "<"
 	}
 	log.Printf("\n%s %s", sigil, strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
-	if own {
+	if own || ms.Author.Bot {
 		return
 	}
 	respond(ms.Message.Content,
