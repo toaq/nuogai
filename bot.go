@@ -97,18 +97,19 @@ type Response struct {
 }
 
 func Respond(dg *discordgo.Session, ms *discordgo.MessageCreate) {
-	if ms.Message.Content == "" {
+	if ms.Message.Content == "" || (ms.Author.Bot && ms.Author.ID != dg.State.User.ID) {
 		return
 	}
-	own := ms.Author.ID == dg.State.User.ID
+
 	sigil := ">"
-	if own {
+	if ms.Author.Bot {
 		sigil = "<"
 	}
 	log.Printf("\n%s %s", sigil, strings.Join(strings.Split(ms.Message.Content, "\n"), "\n  "))
-	if own || ms.Author.Bot {
+	if ms.Author.Bot {
 		return
 	}
+
 	respond(ms.Message.Content,
 		func(r Response) {
 			files := make([]*discordgo.File, 0, 1)
