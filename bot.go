@@ -28,17 +28,20 @@ const (
 	wikiHelpUrl     = "https://toaq.me/Nuogaı"
 	wikiPageUrl     = "https://toaq.me/%s"
 	wikiCommandsUrl = "https://toaq.me/Discord/Help_text?action=render"
-	toaduaUrl       = "%s/api"
+	toaduaApiUrl    = "%s/api"
+	toaduaUrlForId  = "%s/##%s"
 	zugaiUrl        = "%s/zugai?to=%s&text=%s"
-	lozenge         = '▯'
+	lozenge         = '□'
 )
 
 var (
-	markdownLinkRe        = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
-	alphaHyphenRe         = regexp.MustCompile(`^[a-z-]+$`)
-	allBangsRe            = regexp.MustCompile(`^[!?]*$`)
-	toaduaCmdRe           = regexp.MustCompile(`^%([1-9][0-9]*)?$`)
-	toaduaHost, zugaiHost string
+	markdownLinkRe = regexp.MustCompile(`!?\[(.*)\]\((.*)\)`)
+	alphaHyphenRe  = regexp.MustCompile(`^[a-z-]+$`)
+	allBangsRe     = regexp.MustCompile(`^[!?]*$`)
+	toaduaCmdRe    = regexp.MustCompile(`^%([1-9][0-9]*)?$`)
+	hostInternal   string
+	hostExternal   string
+	zugaiHost      string
 )
 
 func mustGetenv(name string) (env string) {
@@ -50,7 +53,8 @@ func mustGetenv(name string) (env string) {
 }
 
 func init() {
-	toaduaHost = mustGetenv("TOADUA_HOST")
+	hostInternal = mustGetenv("TOADUA_HOST_INTERNAL")
+	hostExternal = mustGetenv("TOADUA_HOST_EXTERNAL")
 	zugaiHost = mustGetenv("ZUGAI_HOST")
 }
 
@@ -413,7 +417,7 @@ func Toadua(args []string, howMany int, returnText func(string)) {
 		returnText("error")
 		return
 	}
-	raw, err := http.Post(fmt.Sprintf(toaduaUrl, toaduaHost),
+	raw, err := http.Post(fmt.Sprintf(toaduaApiUrl, hostInternal),
 		"application/json", bytes.NewReader(mars))
 	if err != nil {
 		log.Print(err)
@@ -455,28 +459,25 @@ func Toadua(args []string, howMany int, returnText func(string)) {
 		searchProngs += "–" + strconv.Itoa(last)
 	}
 	fmt.Fprintf(&b, "\u2003(%s/%d)", searchProngs, len(resp.Entries))
+
 	soFar := b.String()
 	for _, e := range resp.Entries[first:last] {
-		// if i != 0 {
-		b.WriteString("\n")
-		// }
-		// b.WriteString(" — ")
-		b.WriteString("**" + e.Head + "**")
-		fmt.Fprintf(&b, " (%s)", e.User)
-		if e.Score != 0 {
-			b.WriteString(" ")
-			if e.Score > 0 {
-				b.WriteString(strings.Repeat("+", e.Score))
-			} else {
-				b.WriteString(strings.Repeat("−", -e.Score))
-			}
+		pageUrl := fmt.Sprintf(toaduaUrlForId, hostExternal, e.Id)
+		fmt.Fprintf(&b, "\n**[%s](<%s>)** (%s) ", e.Head, pageUrl, e.User)
+
+		if e.Score > 0 {
+			b.WriteString(strings.Repeat("+", e.Score))
+		} else {
+			b.WriteString(strings.Repeat("−", -e.Score))
 		}
-		// b.WriteString(" — ")
+
 		b.WriteString("\n\u2003")
 		b.WriteString(strings.Join(strings.Split(e.Body, "\n"), "\n\u2003"))
+
 		for _, note := range e.Notes {
 			fmt.Fprintf(&b, "\n\u2003\u2003• (%s) %s", note.User, note.Content)
 		}
+
 		old := soFar
 		soFar = b.String()
 		if len(soFar) > 2000 {

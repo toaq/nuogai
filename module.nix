@@ -3,21 +3,22 @@ let cfg = config.services.nuogai;
 in with lib; {
   options.services.nuogai = {
     enable = mkEnableOption "Enables the nuogaı Discord Bot";
-    toaduaHost = mkOption { type = types.str; };
+    hostInternal = mkOption { type = types.str; };
+    hostExternal = mkOption { type = types.str; };
     zugaiHost = mkOption { type = types.str; };
     tokenPath = mkOption { type = types.path; };
   };
   config = {
     fonts.fonts = optionals cfg.enable [ self.packages.${system}.toaqScript ];
-    services.nuogai.zugaiHost = lib.mkDefault "https://zugai.toaq.me";
     systemd.services.nuogai = {
       inherit (cfg) enable;
       description = "Toaq Discord bot";
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
-      environment = {
-        TOADUA_HOST = cfg.toaduaHost;
-        ZUGAI_HOST = cfg.zugaiHost;
+      environment = with cfg; {
+        TOADUA_HOST_INTERNAL = hostInternal;
+        TOADUA_HOST_EXTERNAL = hostExternal;
+        ZUGAI_HOST = zugaiHost;
       };
       script = ''
         export NUOGAI_TOKEN=$(cat ${cfg.tokenPath})
