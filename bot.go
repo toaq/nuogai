@@ -373,7 +373,7 @@ func Zugai(input, resource string) (Response, error) {
 
 type ToaduaRequest struct {
 	Action             string      `json:"action"`
-	Query              interface{} `json:"query"`
+	Query              string      `json:"query"`
 	PreferredScope     string      `json:"preferred_scope"`
 	PreferredScopeBias float64     `json:"preferred_scope_bias"`
 }
@@ -408,7 +408,7 @@ func Toadua(args []string, howMany int, returnText func(string)) {
 	query := strings.Join(args, " ")
 	mars, err := json.Marshal(ToaduaRequest{
 		Action:             "search",
-		Query:              ToaduaQuery(query),
+		Query:              query,
 		PreferredScope:     "en",
 		PreferredScopeBias: 16,
 	})
@@ -487,48 +487,6 @@ func Toadua(args []string, howMany int, returnText func(string)) {
 		}
 	}
 	returnText(b.String())
-}
-
-func ToaduaQuery(s string) interface{} {
-	spaced := strings.Split(s, " ")
-	andArgs := make([]interface{}, len(spaced))
-	for i, andArg := range spaced {
-		ored := strings.Split(andArg, "|")
-		orArgs := make([]interface{}, len(ored))
-		for j, orArg := range ored {
-			neg := false
-			if strings.HasPrefix(orArg, "!") {
-				orArg = orArg[1:]
-				neg = true
-			}
-			parts := strings.SplitN(orArg, ":", 2)
-			var term interface{}
-			if len(parts) == 1 {
-				term = []interface{}{"term", orArg}
-			} else {
-				if parts[0] == "arity" {
-					conv, _ := strconv.Atoi(parts[1])
-					term = []interface{}{"arity", conv}
-				} else {
-					term = []interface{}{parts[0], parts[1]}
-				}
-			}
-			if neg {
-				term = []interface{}{"not", term}
-			}
-			orArgs[j] = term
-		}
-		if len(orArgs) == 1 {
-			andArgs[i] = orArgs[0]
-		} else {
-			andArgs[i] = append([]interface{}{"or"}, orArgs...)
-		}
-	}
-	if len(andArgs) == 1 {
-		return andArgs[0]
-	} else {
-		return append([]interface{}{"and"}, andArgs...)
-	}
 }
 
 func Hoekai(s string) string {
