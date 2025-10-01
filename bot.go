@@ -482,8 +482,9 @@ func Toadua(args []string, howMany int, returnText func(string)) {
 		soFar = b.String()
 		if len(soFar) > 2000 {
 			returnText(old)
-			b.Reset()
-			b.WriteString(soFar[len(old):])
+			return
+			// b.Reset()
+			// b.WriteString(soFar[len(old):])
 		}
 	}
 	returnText(b.String())
